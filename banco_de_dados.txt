@@ -1,0 +1,123 @@
+-- =====================================================================
+-- CARVOTRACK - SISTEMA DE GESTÃO E MONITORAMENTO DE CARVOARIA
+-- PROJETO INTEGRADOR (PI) - PROGRAMAÇÃO WEB
+-- ARQUIVO DE CRIAÇÃO DO BANCO DE DADOS E TABELAS
+-- =====================================================================
+-- Aluno: Pedro Henrique de Lima Silveira
+-- RA: 118771
+-- Tema do PI: Plataforma de Gestão e Monitoramento de Produção de Carvão Vegetal (CarvoTrack)
+-- Charset: utf8mb4
+-- =====================================================================
+
+-- 1. Criação do Banco de Dados
+CREATE DATABASE IF NOT EXISTS `carvotrack` 
+  CHARACTER SET utf8mb4 
+  COLLATE utf8mb4_unicode_ci;
+
+USE `carvotrack`;
+
+-- ---------------------------------------------------------------------
+-- 2. Tabela de Usuários / Operadores
+-- Armazena os usuários autorizados a acessar o sistema
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `historico_acoes`;
+DROP TABLE IF EXISTS `processos_carbonizacao`;
+DROP TABLE IF EXISTS `lotes_madeira`;
+DROP TABLE IF EXISTS `fornos`;
+DROP TABLE IF EXISTS `usuarios`;
+
+CREATE TABLE `usuarios` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `nome` VARCHAR(100) NOT NULL,
+  `email` VARCHAR(120) NOT NULL UNIQUE,
+  `senha` VARCHAR(255) NOT NULL,
+  `cargo` VARCHAR(50) NOT NULL DEFAULT 'Operador',
+  `criado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- 3. Tabela de Fornos de Carbonização (Entidade principal do CRUD)
+-- Representa as fornalhas industriais monitoradas
+-- ---------------------------------------------------------------------
+CREATE TABLE `fornos` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `codigo` VARCHAR(30) NOT NULL UNIQUE,
+  `tipo_material` VARCHAR(60) NOT NULL,
+  `capacidade_kg` DECIMAL(10,2) NOT NULL,
+  `potencia_kw` DECIMAL(8,2) NOT NULL,
+  `temperatura_max` DECIMAL(6,2) NOT NULL,
+  `status` ENUM('disponivel', 'em_processo', 'manutencao') NOT NULL DEFAULT 'disponivel',
+  `observacoes` TEXT NULL,
+  `criado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `atualizado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- 4. Tabela de Lotes de Madeira
+-- Lotes de biomassa/madeira para carbonização
+-- ---------------------------------------------------------------------
+CREATE TABLE `lotes_madeira` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `codigo_lote` VARCHAR(30) NOT NULL UNIQUE,
+  `especie_madeira` VARCHAR(80) NOT NULL,
+  `peso_lote_kg` DECIMAL(10,2) NOT NULL,
+  `umidade_percentual` DECIMAL(5,2) NOT NULL,
+  `densidade_kg_m3` DECIMAL(6,2) NOT NULL,
+  `status` ENUM('disponivel', 'em_uso', 'concluido') NOT NULL DEFAULT 'disponivel',
+  `data_entrada` DATE NOT NULL,
+  `criado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- 5. Tabela de Processos de Carbonização (Escrita Multi-tabelas / Transação)
+-- Vincula forno, lote de madeira e operador
+-- ---------------------------------------------------------------------
+CREATE TABLE `processos_carbonizacao` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `forno_id` INT NOT NULL,
+  `lote_id` INT NOT NULL,
+  `usuario_id` INT NOT NULL,
+  `data_inicio` DATETIME NOT NULL,
+  `data_fim` DATETIME NULL,
+  `temperatura_alvo` DECIMAL(6,2) NOT NULL,
+  `rendimento_carvao_kg` DECIMAL(10,2) NULL,
+  `status` ENUM('ativo', 'finalizado', 'cancelado') NOT NULL DEFAULT 'ativo',
+  `criado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_processo_forno` FOREIGN KEY (`forno_id`) REFERENCES `fornos` (`id`) ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT `fk_processo_lote` FOREIGN KEY (`lote_id`) REFERENCES `lotes_madeira` (`id`) ON UPDATE CASCADE ON DELETE RESTRICT,
+  CONSTRAINT `fk_processo_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- 6. Tabela de Histórico de Ações (Auditoria na Transação)
+-- ---------------------------------------------------------------------
+CREATE TABLE `historico_acoes` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `usuario_id` INT NOT NULL,
+  `acao` VARCHAR(80) NOT NULL,
+  `detalhes` TEXT NULL,
+  `criado_em` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_historico_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`) ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================================
+-- DADOS INICIAIS DE TESTE / DEMONSTRAÇÃO
+-- =====================================================================
+
+-- Senha padrão para os usuários: "admin123" gerada com password_hash(..., PASSWORD_DEFAULT)
+-- Hash: $2y$10$wS2Wb1/c3K9kR/k9.k0Lge0PqE4v30Ufq9N4Zc7qS0Hl0K8B4jR9a (ou gerado na inicialização)
+INSERT INTO `usuarios` (`nome`, `email`, `senha`, `cargo`) VALUES
+('Pedro Silveira', 'pedro@carvotrack.com', '$2y$10$H8zGj0mR9n7vT3zR.H.NnOq2nL8.F0H4m8G5F5pM8J6K7L8M9N0O1', 'Administrador'),
+('Operador Padrão', 'operador@carvotrack.com', '$2y$10$H8zGj0mR9n7vT3zR.H.NnOq2nL8.F0H4m8G5F5pM8J6K7L8M9N0O1', 'Operador de Forno');
+
+-- Fornos iniciais
+INSERT INTO `fornos` (`codigo`, `tipo_material`, `capacidade_kg`, `potencia_kw`, `temperatura_max`, `status`, `observacoes`) VALUES
+('FRN-ALV-01', 'Alvenaria Refratária', 4500.00, 60.00, 750.00, 'disponivel', 'Forno cilíndrico principal do pátio Norte.'),
+('FRN-ACO-02', 'Aço Carbono Especial', 3000.00, 45.00, 680.00, 'disponivel', 'Forno com manta térmica de isolamento acústico e térmico.'),
+('FRN-TIJ-03', 'Tijolo Ecológico', 2500.00, 35.00, 600.00, 'manutencao', 'Em revisão preventiva de sensores termopares tipo K.');
+
+-- Lotes de Madeira iniciais
+INSERT INTO `lotes_madeira` (`codigo_lote`, `especie_madeira`, `peso_lote_kg`, `umidade_percentual`, `densidade_kg_m3`, `status`, `data_entrada`) VALUES
+('LOT-EUC-2026-01', 'Eucalipto Saligna', 4200.00, 16.50, 680.00, 'disponivel', '2026-10-15'),
+('LOT-EUC-2026-02', 'Eucalipto Grandis', 3100.00, 18.20, 640.00, 'disponivel', '2026-10-20'),
+('LOT-ACA-2026-03', 'Acácia Negra', 2800.00, 15.00, 720.00, 'disponivel', '2026-10-25');

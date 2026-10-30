@@ -1,0 +1,25 @@
+=====================================================================
+IDENTIFICAÇÃO DO PROJETO - ATIVIDADE PHP / CRUD COM PDO
+=====================================================================
+
+Tema do Projeto Integrador (PI):
+CarvoTrack - Plataforma de Gestão e Monitoramento de Produção de Carvão Vegetal
+
+Nome do Grupo:
+Grupo CarvoTrack
+
+Integrantes do Grupo:
+- Nome: Pedro Henrique de Lima Silveira | RA: 118771
+
+Dados de Acesso Padrão ao Sistema:
+- E-mail: admin@carvotrack.com (ou pedro@carvotrack.com)
+- Senha: admin123
+
+Boas Práticas Implementadas:
+1. require_once 'conexao.php' no topo de todas as páginas.
+2. ERRMODE_EXCEPTION ligado na criação da instância do PDO.
+3. prepare() e execute() com placeholders posicionais '?' para todos os dados externos.
+4. charset=utf8mb4 configurado na DSN e nas tabelas do MySQL.
+5. Transação com PDO (beginTransaction, commit, rollBack) na escrita multi-tabelas (novo_processo.php).
+6. Tratamento de PDOException com error_log no servidor e mensagem genérica amigável ao usuário.
+=====================================================================

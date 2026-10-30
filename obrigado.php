@@ -1,5 +1,8 @@
 <?php
-session_start();
+require_once 'conexao.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 $estoque = $_SESSION['estoque'] ?? 0;
 ?>
 <!DOCTYPE html>
@@ -11,11 +14,10 @@ $estoque = $_SESSION['estoque'] ?? 0;
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="pagina-mensagem">
-  <div>
+  <div style="max-width: 600px; margin: 4rem auto; text-align: center; padding: 2rem; background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
     <h1>Obrigado pela sua compra! 🎉</h1>
-    <p>Assim que o pagamento for confirmado, por favor envie um e-mail para <strong>contato@codigofonte.tv</strong> com seus dados para envio.</p>
-    <p>Unidades restantes: <strong><?php echo $estoque; ?></strong></p>
-    <a class="btn" href="index.php">Voltar para a Página Inicial</a>
+    <p>Operação concluída com sucesso no sistema.</p>
+    <a class="btn btn-primario" href="index.php" style="margin-top: 1.5rem;">Voltar ao Início</a>
   </div>
 </body>
 </html>
